@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Color Pop Fun! 繽紛色彩消珠大冒險</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        body {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .font-english {
+            font-family: 'Fredoka One', cursive;
+        }
+
+        /* 寶石動畫與視覺樣式 */
+        .grid-cell {
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            touch-action: none;
+        }
+
+        .gem {
+            transition: transform 0.2s ease, filter 0.2s ease;
+            box-shadow: inset -4px -4px 8px rgba(0,0,0,0.25), inset 4px 4px 8px rgba(255,255,255,0.6), 0 6px 12px rgba(0,0,0,0.15);
+            cursor: grab;
+        }
+
+        .gem:active {
+            cursor: grabbing;
+        }
+
+        .gem:hover {
+            transform: scale(1.08);
+            filter: brightness(1.1);
+        }
+
+        .gem-selected {
+            animation: pulse-border 0.8s infinite alternate;
+            transform: scale(1.12) !important;
+            z-index: 20;
+        }
+
+        @keyframes pulse-border {
+            0% { box-shadow: 0 0 0 4px #ffffff, 0 0 15px rgba(255,255,255,0.8); }
+            100% { box-shadow: 0 0 0 6px #ffeb3b, 0 0 25px rgba(255,235,59,0.9); }
+        }
+
+        /* 特殊寶石閃耀效果 */
+        .special-line-gem {
+            animation: glow-line 1.2s infinite alternate ease-in-out;
+        }
+
+        @keyframes glow-line {
+            0% { box-shadow: 0 0 6px #38bdf8, inset 0 0 10px #ffffff; }
+            100% { box-shadow: 0 0 18px #0284c7, inset 0 0 15px #e0f2fe; }
+        }
+
+        .special-bomb-gem {
+            animation: glow-bomb 0.8s infinite alternate ease-in-out;
+        }
+
+        @keyframes glow-bomb {
+            0% { box-shadow: 0 0 8px #f97316, inset 0 0 10px #fef08a; transform: scale(1); }
+            100% { box-shadow: 0 0 22px #ef4444, inset 0 0 18px #ffffff; transform: scale(1.06); }
+        }
+
+        .pop-animation {
+            animation: popOut 0.35s cubic-bezier(0.6, -0.28, 0.735, 0.045) forwards;
+        }
+
+        @keyframes popOut {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.8; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        /* 英文單字浮動卡片動畫 */
+        .color-word-card {
+            animation: floatUpAndFade 1.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes floatUpAndFade {
+            0% { transform: translate(-50%, -40%) scale(0.3) rotate(-10deg); opacity: 0; }
+            20% { transform: translate(-50%, -50%) scale(1.15) rotate(3deg); opacity: 1; }
+            35% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+            75% { transform: translate(-50%, -60%) scale(1) rotate(0deg); opacity: 1; }
+            100% { transform: translate(-50%, -90%) scale(0.7) rotate(5deg); opacity: 0; }
+        }
+
+        /* Combo & 提示特效 */
+        .combo-text {
+            animation: comboBounce 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes comboBounce {
+            0% { transform: scale(0.2) rotate(-15deg); opacity: 0; }
+            60% { transform: scale(1.3) rotate(5deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        .notice-banner {
+            animation: noticePop 2.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes noticePop {
+            0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0; }
+            15% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+            25% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            80% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -70%) scale(0.8); opacity: 0; }
+        }
+
+        /* 玻璃擬態效果 */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        .btn-bounce {
+            transition: all 0.15s ease;
+        }
+        .btn-bounce:active {
+            transform: scale(0.92);
+        }
+
+        /* 粒子 Canvas */
+        #particleCanvas {
+            pointer-events: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 30;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-between min-h-screen p-2 sm:p-4 text-slate-800 select-none">
+
+    <!-- 頂部頂欄：標題與聲音設定 -->
+    <header class="w-full max-w-md flex items-center justify-between mb-2 px-2">
+        <div class="flex items-center gap-2">
+            <span class="text-3xl">🎨</span>
+            <div>
+                <h1 class="text-xl sm:text-2xl font-black text-pink-600 tracking-wide drop-shadow-sm">Color Pop!</h1>
+                <p class="text-xs font-bold text-slate-500">繽紛色彩消珠大冒險</p>
+            </div>
+        </div>
+        
+        <div class="flex gap-2">
+            <button id="soundToggleBtn" onclick="toggleSound()" class="glass-panel p-2.5 rounded-2xl text-lg hover:bg-white/90 btn-bounce shadow-sm flex items-center justify-center w-11 h-11">
+                🔊
+            </button>
+            <button id="pauseBtn" onclick="togglePause()" class="glass-panel p-2.5 rounded-2xl text-lg hover:bg-white/90 btn-bounce shadow-sm flex items-center justify-center w-11 h-11">
+                ⏸️
+            </button>
+        </div>
+    </header>
+
+    <!-- 分數與時間儀表板 -->
+    <main class="w-full max-w-md flex flex-col items-center gap-3">
+        <div class="w-full glass-panel rounded-3xl p-3 sm:p-4 flex justify-between items-center shadow-md">
+            <!-- 分數區 -->
+            <div class="flex flex-col items-center px-2">
+                <span class="text-xs font-bold text-slate-500 mb-0.5">得分 SCORE</span>
+                <span id="scoreDisplay" class="font-english text-2xl sm:text-3xl font-bold text-indigo-600 tracking-wider">0</span>
+            </div>
+
+            <!-- 時間區 -->
+            <div class="flex flex-col items-center px-2 border-x-2 border-pink-100 min-w-[90px]">
+                <span class="text-xs font-bold text-slate-500 mb-0.5">剩餘時間</span>
+                <div class="flex items-center gap-1">
+                    <span class="text-sm">⏳</span>
+                    <span id="timerDisplay" class="font-english text-2xl sm:text-3xl font-bold text-pink-500">60</span>
+                </div>
+            </div>
+
+            <!-- 最高分 -->
+            <div class="flex flex-col items-center px-2">
+                <span class="text-xs font-bold text-slate-500 mb-0.5">最高分 BEST</span>
+                <span id="highScoreDisplay" class="font-english text-2xl sm:text-3xl font-bold text-amber-500">0</span>
+            </div>
+        </div>
+
+        <!-- 遊戲主要棋盤區域 -->
+        <div class="relative w-full aspect-square max-w-[420px]">
+            <!-- 粒子效果繪製層 -->
+            <canvas id="particleCanvas"></canvas>
+
+            <!-- 棋盤容器 -->
+            <div id="gameBoard" class="w-full h-full glass-panel rounded-3xl p-2.5 grid grid-cols-6 gap-2 shadow-xl relative overflow-hidden">
+                <!-- 寶石由 JS 動態生成 -->
+            </div>
+
+            <!-- 浮動英文單字顯示區 -->
+            <div id="wordBannerContainer" class="absolute inset-0 pointer-events-none z-40 overflow-hidden"></div>
+
+            <!-- 特效與提示文字區 -->
+            <div id="comboContainer" class="absolute inset-0 pointer-events-none z-30 flex items-center justify-center"></div>
+
+            <!-- 暫停遮罩 -->
+            <div id="pauseOverlay" class="hidden absolute inset-0 bg-slate-900/60 backdrop-blur-sm rounded-3xl z-50 flex flex-col items-center justify-center text-white">
+                <span class="text-5xl mb-3">⏸️</span>
+                <h2 class="text-2xl font-black mb-4">遊戲暫停中</h2>
+                <button onclick="togglePause()" class="px-6 py-2.5 bg-gradient-to-r from-pink-400 to-purple-500 text-white font-bold rounded-full shadow-lg hover:brightness-110 btn-bounce">
+                    繼續遊戲
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- 底部教學學習對照區 -->
+    <footer class="w-full max-w-md my-2 glass-panel rounded-2xl p-2.5 flex items-center justify-around text-xs font-bold shadow-sm">
+        <div class="flex items-center gap-1"><span class="w-3.5 h-3.5 rounded-full bg-red-500 inline-block shadow"></span> Red</div>
+        <div class="flex items-center gap-1"><span class="w-3.5 h-3.5 rounded-full bg-blue-500 inline-block shadow"></span> Blue</div>
+        <div class="flex items-center gap-1"><span class="w-3.5 h-3.5 rounded-full bg-emerald-500 inline-block shadow"></span> Green</div>
+        <div class="flex items-center gap-1"><span class="w-3.5 h-3.5 rounded-full bg-amber-400 inline-block shadow"></span> Yellow</div>
+        <div class="flex items-center gap-1"><span class="w-3.5 h-3.5 rounded-full bg-purple-500 inline-block shadow"></span> Purple</div>
+        <div class="flex items-center gap-1"><span class="w-3.5 h-3.5 rounded-full bg-orange-500 inline-block shadow"></span> Orange</div>
+    </footer>
+
+    <!-- 開始/重來 Modal 彈窗 -->
+    <div id="modalOverlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-sm rounded-3xl p-6 text-center shadow-2xl bg-white/95 relative overflow-hidden">
+            <div id="modalStartContent" class="space-y-3.5">
+                <div class="text-5xl animate-bounce">💎</div>
+                <h2 class="text-2xl font-black text-pink-600">繽紛色彩消珠大冒險</h2>
+                <p class="text-xs font-bold text-slate-600 leading-relaxed">
+                    👆 <span class="text-pink-500 font-extrabold">按住寶石拉動上下左右</span> 交換寶石！<br>
+                    湊齊 <span class="text-indigo-600 font-extrabold">3 個以上相同顏色</span> 就能消除得分！
+                </p>
+                
+                <div class="bg-amber-50 p-3 rounded-2xl text-xs font-bold text-amber-800 border border-amber-200 text-left space-y-1.5">
+                    <p class="flex items-center gap-1.5"><span class="text-base">⚡</span> <span>消 4 粒：生成<b>直線貫穿珠</b>（消除整列）</span></p>
+                    <p class="flex items-center gap-1.5"><span class="text-base">💣</span> <span>消 5 粒：生成<b>超級炸彈</b>（爆破周圍 1 格）</span></p>
+                    <p class="flex items-center gap-1.5"><span class="text-base">🧹</span> <span>若無位可消：自動引爆最底層換新珠！</span></p>
+                </div>
+
+                <button onclick="startGame()" class="w-full py-3.5 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-black text-lg rounded-2xl shadow-lg hover:brightness-110 btn-bounce tracking-wider">
+                    開始挑戰！🚀
+                </button>
+            </div>
+
+            <div id="modalGameOverContent" class="hidden space-y-4">
+                <div id="starRating" class="text-4xl flex justify-center gap-2">⭐ ⭐ ⭐</div>
+                <h2 class="text-2xl font-black text-indigo-600">時間到！太棒了！</h2>
+                <p class="text-sm font-bold text-slate-500">你學會了好多顏色英文單字呢！</p>
+                
+                <div class="bg-indigo-50/80 p-4 rounded-2xl space-y-2 border border-indigo-100">
+                    <div class="flex justify-between text-sm font-bold text-slate-600">
+                        <span>本次得分：</span>
+                        <span id="finalScore" class="font-english text-xl text-pink-600">0</span>
+                    </div>
+                    <div class="flex justify-between text-sm font-bold text-slate-600">
+                        <span>消除次數：</span>
+                        <span id="totalMatches" class="font-english text-xl text-purple-600">0</span>
+                    </div>
+                    <div id="newHighNotice" class="hidden text-xs font-black text-amber-500 animate-pulse pt-1">
+                        🎉 恭喜刷破最高紀錄！ 🎉
+                    </div>
+                </div>
+
+                <button onclick="startGame()" class="w-full py-3.5 bg-gradient-to-r from-emerald-400 to-teal-600 text-white font-black text-lg rounded-2xl shadow-lg hover:brightness-110 btn-bounce tracking-wider">
+                    再玩一次 🔄
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 音效管理器 (Web Audio API)
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+            }
+
+            playPop(freq = 400) {
+                if (this.muted || !this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(freq * 1.8, this.ctx.currentTime + 0.12);
+                    
+                    gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.12);
+                } catch(e) {}
+            }
+
+            playCombo(comboCount) {
+                if (this.muted || !this.ctx) return;
+                try {
+                    const baseFreq = 300 + comboCount * 120;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(baseFreq, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.5, this.ctx.currentTime + 0.25);
+
+                    gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.25);
+                } catch(e) {}
+            }
+
+            playExplode() {
+                if (this.muted || !this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.35);
+
+                    gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.35);
+                } catch(e) {}
+            }
+
+            playMatch() {
+                if (this.muted || !this.ctx) return;
+                [523.25, 659.25, 783.99].forEach((freq, idx) => {
+                    setTimeout(() => this.playPop(freq), idx * 60);
+                });
+            }
+        }
+
+        const soundFX = new SoundFX();
+
+        // 顏色數據設定
+        const COLORS = [
+            { id: 'red', name: 'RED', zh: '紅色', bg: 'bg-red-500', hex: '#ef4444', icon: '🍎' },
+            { id: 'blue', name: 'BLUE', zh: '藍色', bg: 'bg-blue-500', hex: '#3b82f6', icon: '🐟' },
+            { id: 'green', name: 'GREEN', zh: '綠色', bg: 'bg-emerald-500', hex: '#10b981', icon: '🐸' },
+            { id: 'yellow', name: 'YELLOW', zh: '黃色', bg: 'bg-amber-400', hex: '#facc15', icon: '⭐' },
+            { id: 'purple', name: 'PURPLE', zh: '紫色', bg: 'bg-purple-500', hex: '#a855f7', icon: '🍇' },
+            { id: 'orange', name: 'ORANGE', zh: '橘色', bg: 'bg-orange-500', hex: '#f97316', icon: '🍊' }
+        ];
+
+        // 英文語音合成 (TTS)
+        function speakWord(word) {
+            if (soundFX.muted) return;
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(word);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.9;
+                utterance.pitch = 1.2;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        const BOARD_SIZE = 6;
+        let board = [];
+        let selectedCell = null;
+        let isAnimating = false;
+        let score = 0;
+        let timer = 60;
+        let timerInterval = null;
+        let isPaused = false;
+        let isGameRunning = false;
+        let matchCount = 0;
+        let combo = 0;
+        let highScore = parseInt(localStorage.getItem('color_pop_highscore') || '0');
+
+        // Drag & Touch 手勢變數
+        let dragStartR = null;
+        let dragStartC = null;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let isDragging = false;
+        let lastActionPos = null; // 紀錄玩家操作的位置，用於生成道具
+
+        // DOM 元素
+        const gameBoardEl = document.getElementById('gameBoard');
+        const scoreDisplayEl = document.getElementById('scoreDisplay');
+        const timerDisplayEl = document.getElementById('timerDisplay');
+        const highScoreDisplayEl = document.getElementById('highScoreDisplay');
+        const modalOverlayEl = document.getElementById('modalOverlay');
+        const modalStartContent = document.getElementById('modalStartContent');
+        const modalGameOverContent = document.getElementById('modalGameOverContent');
+        const wordBannerContainer = document.getElementById('wordBannerContainer');
+        const comboContainer = document.getElementById('comboContainer');
+
+        highScoreDisplayEl.textContent = highScore;
+
+        // 粒子特效 Canvas
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            const rect = gameBoardEl.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        class Particle {
+            constructor(x, y, colorHex) {
+                this.x = x;
+                this.y = y;
+                this.color = colorHex;
+                this.radius = Math.random() * 6 + 4;
+                this.vx = (Math.random() - 0.5) * 8;
+                this.vy = (Math.random() - 0.5) * 8 - 2;
+                this.alpha = 1;
+                this.decay = Math.random() * 0.03 + 0.02;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.2;
+                this.alpha -= this.decay;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function createParticles(x, y, colorHex, count = 12) {
+            for (let i = 0; i < count; i++) {
+                particles.push(new Particle(x, y, colorHex));
+            }
+        }
+
+        function renderParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach((p, idx) => {
+                p.update();
+                p.draw();
+                if (p.alpha <= 0) particles.splice(idx, 1);
+            });
+            requestAnimationFrame(renderParticles);
+        }
+        requestAnimationFrame(renderParticles);
+
+        function startGame() {
+            soundFX.init();
+            score = 0;
+            timer = 60;
+            matchCount = 0;
+            combo = 0;
+            isGameRunning = true;
+            isPaused = false;
+            selectedCell = null;
+            isAnimating = false;
+
+            scoreDisplayEl.textContent = score;
+            timerDisplayEl.textContent = timer;
+            document.getElementById('pauseOverlay').classList.add('hidden');
+            modalOverlayEl.classList.add('hidden');
+
+            initBoard();
+            resizeCanvas();
+
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function createGemObject(colorObj, specialType = null) {
+            return {
+                ...colorObj,
+                idKey: Math.random(),
+                special: specialType // null | 'line' | 'bomb'
+            };
+        }
+
+        function initBoard() {
+            board = [];
+            for (let r = 0; r < BOARD_SIZE; r++) {
+                board[r] = [];
+                for (let c = 0; c < BOARD_SIZE; c++) {
+                    do {
+                        const randomColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+                        board[r][c] = createGemObject(randomColor);
+                    } while (
+                        (r >= 2 && board[r][c].id === board[r-1][c].id && board[r][c].id === board[r-2][c].id) ||
+                        (c >= 2 && board[r][c].id === board[r][c-1].id && board[r][c].id === board[r][c-2].id)
+                    );
+                }
+            }
+            renderBoard();
+
+            // 若剛生成就沒位消，自動重設
+            if (!hasPossibleMoves()) {
+                initBoard();
+            }
+        }
+
+        function renderBoard() {
+            gameBoardEl.innerHTML = '';
+            for (let r = 0; r < BOARD_SIZE; r++) {
+                for (let c = 0; c < BOARD_SIZE; c++) {
+                    const gemData = board[r][c];
+                    const cell = document.createElement('div');
+                    cell.className = `grid-cell w-full h-full flex items-center justify-center relative`;
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+
+                    if (gemData) {
+                        const gem = document.createElement('div');
+                        let specialClass = '';
+                        if (gemData.special === 'line') specialClass = 'special-line-gem ring-4 ring-sky-300';
+                        else if (gemData.special === 'bomb') specialClass = 'special-bomb-gem ring-4 ring-orange-400';
+
+                        gem.className = `gem w-full h-full rounded-2xl ${gemData.bg} ${specialClass} flex items-center justify-center text-xl sm:text-2xl font-bold text-white shadow-md relative overflow-hidden select-none`;
+                        
+                        let badgeIcon = gemData.icon;
+                        if (gemData.special === 'line') badgeIcon = '⚡';
+                        else if (gemData.special === 'bomb') badgeIcon = '💣';
+
+                        gem.innerHTML = `
+                            <div class="absolute top-1 left-1.5 w-2.5 h-2.5 bg-white/40 rounded-full"></div>
+                            <span>${badgeIcon}</span>
+                        `;
+
+                        if (selectedCell && selectedCell.r === r && selectedCell.c === c) {
+                            gem.classList.add('gem-selected');
+                        }
+
+                        cell.appendChild(gem);
+                    }
+
+                    // 綁定手勢與點擊
+                    cell.addEventListener('mousedown', (e) => handleDragStart(e, r, c));
+                    cell.addEventListener('touchstart', (e) => handleDragStart(e, r, c), { passive: false });
+
+                    gameBoardEl.appendChild(cell);
+                }
+            }
+        }
+
+        window.addEventListener('mousemove', handleDragMove);
+        window.addEventListener('touchmove', handleDragMove, { passive: false });
+        window.addEventListener('mouseup', handleDragEnd);
+        window.addEventListener('touchend', handleDragEnd);
+
+        function handleDragStart(e, r, c) {
+            if (isAnimating || isPaused || !isGameRunning) return;
+
+            isDragging = true;
+            dragStartR = r;
+            dragStartC = c;
+
+            const pageX = e.touches ? e.touches[0].pageX : e.pageX;
+            const pageY = e.touches ? e.touches[0].pageY : e.pageY;
+
+            dragStartX = pageX;
+            dragStartY = pageY;
+        }
+
+        function handleDragMove(e) {
+            if (!isDragging || dragStartR === null || isAnimating) return;
+
+            const pageX = e.touches ? e.touches[0].pageX : e.pageX;
+            const pageY = e.touches ? e.touches[0].pageY : e.pageY;
+
+            const deltaX = pageX - dragStartX;
+            const deltaY = pageY - dragStartY;
+            const threshold = 25;
+
+            if (Math.abs(deltaX) > threshold || Math.abs(deltaY) > threshold) {
+                let targetR = dragStartR;
+                let targetC = dragStartC;
+
+                if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                    targetC += deltaX > 0 ? 1 : -1;
+                } else {
+                    targetR += deltaY > 0 ? 1 : -1;
+                }
+
+                if (targetR >= 0 && targetR < BOARD_SIZE && targetC >= 0 && targetC < BOARD_SIZE) {
+                    isDragging = false;
+                    swapGems(dragStartR, dragStartC, targetR, targetC);
+                    dragStartR = null;
+                    dragStartC = null;
+                    selectedCell = null;
+                }
+            }
+        }
+
+        function handleDragEnd() {
+            if (isDragging && dragStartR !== null) {
+                handleCellClick(dragStartR, dragStartC);
+            }
+            isDragging = false;
+            dragStartR = null;
+            dragStartC = null;
+        }
+
+        function handleCellClick(r, c) {
+            if (isAnimating || isPaused || !isGameRunning) return;
+
+            soundFX.playPop(500);
+
+            if (!selectedCell) {
+                selectedCell = { r, c };
+                renderBoard();
+            } else {
+                const rDiff = Math.abs(selectedCell.r - r);
+                const cDiff = Math.abs(selectedCell.c - c);
+
+                if ((rDiff === 1 && cDiff === 0) || (rDiff === 0 && cDiff === 1)) {
+                    swapGems(selectedCell.r, selectedCell.c, r, c);
+                    selectedCell = null;
+                } else {
+                    selectedCell = { r, c };
+                    renderBoard();
+                }
+            }
+        }
+
+        async function swapGems(r1, c1, r2, c2) {
+            isAnimating = true;
+            lastActionPos = { r: r2, c: c2 }; // 紀錄目標位置，若生成特殊珠優先產在目標點
+
+            const temp = board[r1][c1];
+            board[r1][c1] = board[r2][c2];
+            board[r2][c2] = temp;
+            renderBoard();
+
+            const matchResult = checkMatches();
+
+            if (matchResult.matches.length > 0) {
+                combo = 0;
+                await processMatches(matchResult);
+            } else {
+                await new Promise(res => setTimeout(res, 250));
+                const undoTemp = board[r1][c1];
+                board[r1][c1] = board[r2][c2];
+                board[r2][c2] = undoTemp;
+                renderBoard();
+                isAnimating = false;
+            }
+        }
+
+        function checkMatches() {
+            const matchedCoords = new Map();
+            const specialSpawnCandidates = [];
+
+            // 橫向檢測
+            for (let r = 0; r < BOARD_SIZE; r++) {
+                let matchLength = 1;
+                for (let c = 0; c < BOARD_SIZE; c++) {
+                    const checkNext = (c < BOARD_SIZE - 1) && board[r][c]?.id && board[r][c]?.id === board[r][c+1]?.id;
+                    if (checkNext) {
+                        matchLength++;
+                    } else {
+                        if (matchLength >= 3) {
+                            const groupCells = [];
+                            for (let k = 0; k < matchLength; k++) {
+                                const currC = c - k;
+                                const key = `${r},${currC}`;
+                                groupCells.push({ r, c: currC, gem: board[r][currC] });
+                                matchedCoords.set(key, { r, c: currC, gem: board[r][currC] });
+                            }
+                            if (matchLength >= 4) {
+                                specialSpawnCandidates.push({
+                                    length: matchLength,
+                                    cells: groupCells,
+                                    colorObj: board[r][c].special ? COLORS.find(cl => cl.id === board[r][c].id) : board[r][c]
+                                });
+                            }
+                        }
+                        matchLength = 1;
+                    }
+                }
+            }
+
+            // 縱向檢測
+            for (let c = 0; c < BOARD_SIZE; c++) {
+                let matchLength = 1;
+                for (let r = 0; r < BOARD_SIZE; r++) {
+                    const checkNext = (r < BOARD_SIZE - 1) && board[r][c]?.id && board[r][c]?.id === board[r+1][c]?.id;
+                    if (checkNext) {
+                        matchLength++;
+                    } else {
+                        if (matchLength >= 3) {
+                            const groupCells = [];
+                            for (let k = 0; k < matchLength; k++) {
+                                const currR = r - k;
+                                const key = `${currR},${c}`;
+                                groupCells.push({ r: currR, c, gem: board[currR][c] });
+                                matchedCoords.set(key, { r: currR, c, gem: board[currR][c] });
+                            }
+                            if (matchLength >= 4) {
+                                specialSpawnCandidates.push({
+                                    length: matchLength,
+                                    cells: groupCells,
+                                    colorObj: board[r][c]
+                                });
+                            }
+                        }
+                        matchLength = 1;
+                    }
+                }
+            }
+
+            return {
+                matches: Array.from(matchedCoords.values()),
+                specialSpawns: specialSpawnCandidates
+            };
+        }
+
+        async function processMatches(matchResult) {
+            combo++;
+            matchCount++;
+
+            let matches = matchResult.matches;
+            const specialSpawns = matchResult.specialSpawns || [];
+
+            // 檢查是否有引爆特殊寶石 (貫穿珠 ⚡ 或 炸彈 💣)
+            const cellsToExplode = new Set();
+            matches.forEach(m => cellsToExplode.add(`${m.r},${m.c}`));
+
+            let hasBombTriggered = false;
+
+            matches.forEach(m => {
+                const gem = board[m.r][m.c];
+                if (gem && gem.special === 'line') {
+                    hasBombTriggered = true;
+                    // 直線消除整行整列
+                    for (let i = 0; i < BOARD_SIZE; i++) {
+                        cellsToExplode.add(`${m.r},${i}`);
+                        cellsToExplode.add(`${i},${m.c}`);
+                    }
+                } else if (gem && gem.special === 'bomb') {
+                    hasBombTriggered = true;
+                    // 周圍 3x3 炸彈爆破
+                    for (let dr = -1; dr <= 1; dr++) {
+                        for (let dc = -1; dc <= 1; dc++) {
+                            const nr = m.r + dr;
+                            const nc = m.c + dc;
+                            if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE) {
+                                cellsToExplode.add(`${nr},${nc}`);
+                            }
+                        }
+                    }
+                }
+            });
+
+            if (hasBombTriggered) {
+                soundFX.playExplode();
+            } else {
+                soundFX.playCombo(combo);
+            }
+
+            // 轉化為完整的消除陣列
+            const finalMatchList = [];
+            cellsToExplode.forEach(key => {
+                const [r, c] = key.split(',').map(Number);
+                if (board[r][c]) {
+                    finalMatchList.push({ r, c, gem: board[r][c] });
+                }
+            });
+
+            const mainColor = finalMatchList[0]?.gem || matches[0].gem;
+
+            // 分數計算
+            let roundScore = finalMatchList.length * 40;
+            if (hasBombTriggered) roundScore += 300;
+
+            const finalScore = Math.round(roundScore * (1 + (combo - 1) * 0.5));
+            score += finalScore;
+            scoreDisplayEl.textContent = score;
+
+            showColorWordCard(mainColor);
+            speakWord(mainColor.name);
+
+            // 判斷是否需要留下「特殊寶石」
+            const spawnedSpecialPositions = [];
+            specialSpawns.forEach(spawn => {
+                let targetCell = spawn.cells[0];
+                if (lastActionPos) {
+                    const matchPos = spawn.cells.find(cell => cell.r === lastActionPos.r && cell.c === lastActionPos.c);
+                    if (matchPos) targetCell = matchPos;
+                }
+
+                const specialType = spawn.length >= 5 ? 'bomb' : 'line';
+                spawnedSpecialPositions.push({
+                    r: targetCell.r,
+                    c: targetCell.c,
+                    colorObj: COLORS.find(c => c.id === spawn.colorObj.id) || spawn.colorObj,
+                    type: specialType
+                });
+            });
+
+            // 播放消除動畫與粒子
+            finalMatchList.forEach(({ r, c, gem }) => {
+                const cell = gameBoardEl.children[r * BOARD_SIZE + c];
+                if (cell && cell.firstChild) {
+                    cell.firstChild.classList.add('pop-animation');
+                }
+                const rect = cell.getBoundingClientRect();
+                const boardRect = gameBoardEl.getBoundingClientRect();
+                const particleX = rect.left - boardRect.left + rect.width / 2;
+                const particleY = rect.top - boardRect.top + rect.height / 2;
+                createParticles(particleX, particleY, gem.hex, hasBombTriggered ? 18 : 12);
+            });
+
+            if (combo > 1) {
+                showComboText(`COMBO x${combo}!`);
+            }
+
+            await new Promise(res => setTimeout(res, 350));
+
+            // 清空消除格子
+            finalMatchList.forEach(({ r, c }) => {
+                board[r][c] = null;
+            });
+
+            // 產生新的特殊寶石（如果有 4/5 粒消除）
+            spawnedSpecialPositions.forEach(sp => {
+                board[sp.r][sp.c] = createGemObject(sp.colorObj, sp.type);
+            });
+
+            applyGravity();
+            renderBoard();
+
+            await new Promise(res => setTimeout(res, 300));
+
+            // 檢查連擊
+            const nextMatchResult = checkMatches();
+            if (nextMatchResult.matches.length > 0) {
+                await processMatches(nextMatchResult);
+            } else {
+                // 檢查是否無招可消，若死局則自動清理最底層！
+                if (!hasPossibleMoves() && isGameRunning) {
+                    await autoClearBottomRow();
+                } else {
+                    isAnimating = false;
+                }
+            }
+        }
+
+        function hasPossibleMoves() {
+            // 模擬測試是否有任何移動可以造成消除
+            for (let r = 0; r < BOARD_SIZE; r++) {
+                for (let c = 0; c < BOARD_SIZE; c++) {
+                    // 右邊交換
+                    if (c < BOARD_SIZE - 1) {
+                        swapBoardCells(r, c, r, c + 1);
+                        const res = checkMatches();
+                        swapBoardCells(r, c, r, c + 1); // 還原
+                        if (res.matches.length > 0) return true;
+                    }
+                    // 下邊交換
+                    if (r < BOARD_SIZE - 1) {
+                        swapBoardCells(r, c, r + 1, c);
+                        const res = checkMatches();
+                        swapBoardCells(r, c, r + 1, c); // 還原
+                        if (res.matches.length > 0) return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function swapBoardCells(r1, c1, r2, c2) {
+            const temp = board[r1][c1];
+            board[r1][c1] = board[r2][c2];
+            board[r2][c2] = temp;
+        }
+
+        async function autoClearBottomRow() {
+            showNoticeBanner("無位可消！自動清理最底層 🧹✨");
+            soundFX.playExplode();
+
+            const bottomRow = BOARD_SIZE - 1;
+            for (let c = 0; c < BOARD_SIZE; c++) {
+                const cell = gameBoardEl.children[bottomRow * BOARD_SIZE + c];
+                if (cell && cell.firstChild) {
+                    cell.firstChild.classList.add('pop-animation');
+                }
+                const rect = cell.getBoundingClientRect();
+                const boardRect = gameBoardEl.getBoundingClientRect();
+                createParticles(rect.left - boardRect.left + rect.width / 2, rect.top - boardRect.top + rect.height / 2, '#38bdf8', 16);
+            }
+
+            await new Promise(res => setTimeout(res, 400));
+
+            for (let c = 0; c < BOARD_SIZE; c++) {
+                board[bottomRow][c] = null;
+            }
+
+            applyGravity();
+            renderBoard();
+
+            await new Promise(res => setTimeout(res, 300));
+
+            const nextMatchResult = checkMatches();
+            if (nextMatchResult.matches.length > 0) {
+                await processMatches(nextMatchResult);
+            } else if (!hasPossibleMoves() && isGameRunning) {
+                await autoClearBottomRow();
+            } else {
+                isAnimating = false;
+            }
+        }
+
+        function applyGravity() {
+            for (let c = 0; c < BOARD_SIZE; c++) {
+                let emptyRow = BOARD_SIZE - 1;
+                for (let r = BOARD_SIZE - 1; r >= 0; r--) {
+                    if (board[r][c] !== null) {
+                        board[emptyRow][c] = board[r][c];
+                        if (emptyRow !== r) {
+                            board[r][c] = null;
+                        }
+                        emptyRow--;
+                    }
+                }
+                for (let r = emptyRow; r >= 0; r--) {
+                    const randomColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+                    board[r][c] = createGemObject(randomColor);
+                }
+            }
+        }
+
+        function showColorWordCard(colorObj) {
+            const card = document.createElement('div');
+            card.className = `color-word-card absolute top-1/2 left-1/2 rounded-3xl p-4 sm:p-6 shadow-2xl flex flex-col items-center justify-center border-4 border-white ${colorObj.bg} text-white pointer-events-none`;
+            
+            card.innerHTML = `
+                <span class="text-4xl sm:text-5xl mb-1 filter drop-shadow">${colorObj.icon}</span>
+                <span class="font-english text-3xl sm:text-4xl tracking-wider font-black drop-shadow-md">${colorObj.name}</span>
+                <span class="text-base sm:text-lg font-black opacity-90 mt-0.5">${colorObj.zh}</span>
+            `;
+
+            wordBannerContainer.appendChild(card);
+            setTimeout(() => card.remove(), 1600);
+        }
+
+        function showComboText(text) {
+            const comboEl = document.createElement('div');
+            comboEl.className = 'combo-text font-english text-3xl sm:text-4xl font-black text-amber-400 drop-shadow-[0_4px_8px_rgba(0,0,0,0.4)] stroke-white';
+            comboEl.textContent = text;
+            comboContainer.appendChild(comboEl);
+            setTimeout(() => comboEl.remove(), 800);
+        }
+
+        function showNoticeBanner(msg) {
+            const banner = document.createElement('div');
+            banner.className = 'notice-banner absolute top-1/2 left-1/2 px-5 py-3 rounded-2xl bg-indigo-600/90 text-white font-bold text-sm sm:text-base border-2 border-white shadow-2xl text-center backdrop-blur-md pointer-events-none z-50 whitespace-nowrap';
+            banner.textContent = msg;
+            comboContainer.appendChild(banner);
+            setTimeout(() => banner.remove(), 2200);
+        }
+
+        function updateTimer() {
+            if (isPaused || !isGameRunning) return;
+
+            timer--;
+            timerDisplayEl.textContent = timer;
+
+            if (timer <= 0) {
+                endGame();
+            }
+        }
+
+        function endGame() {
+            isGameRunning = false;
+            clearInterval(timerInterval);
+            soundFX.playMatch();
+
+            let isNewHigh = false;
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('color_pop_highscore', highScore);
+                highScoreDisplayEl.textContent = highScore;
+                isNewHigh = true;
+            }
+
+            let stars = '⭐';
+            if (score >= 2500) stars = '⭐ ⭐ ⭐';
+            else if (score >= 1200) stars = '⭐ ⭐';
+
+            document.getElementById('starRating').textContent = stars;
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('totalMatches').textContent = matchCount;
+
+            const noticeEl = document.getElementById('newHighNotice');
+            if (isNewHigh) noticeEl.classList.remove('hidden');
+            else noticeEl.classList.add('hidden');
+
+            modalStartContent.classList.add('hidden');
+            modalGameOverContent.classList.remove('hidden');
+            modalOverlayEl.classList.remove('hidden');
+
+            confetti({
+                particleCount: 80,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        }
+
+        function togglePause() {
+            if (!isGameRunning) return;
+            isPaused = !isPaused;
+            const pauseOverlay = document.getElementById('pauseOverlay');
+            if (isPaused) pauseOverlay.classList.remove('hidden');
+            else pauseOverlay.classList.add('hidden');
+        }
+
+        function toggleSound() {
+            soundFX.muted = !soundFX.muted;
+            document.getElementById('soundToggleBtn').textContent = soundFX.muted ? '🔇' : '🔊';
+        }
+    </script>
+</body>
+</html>
